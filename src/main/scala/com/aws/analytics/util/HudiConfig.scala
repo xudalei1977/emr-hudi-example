@@ -1,6 +1,8 @@
 package com.aws.analytics.util
 
 import com.aws.analytics.conf.Config
+import org.apache.hudi.config.HoodieIndexConfig
+import org.apache.hudi.index.HoodieIndex
 
 import scala.collection.mutable
 object HudiConfig {
@@ -40,6 +42,17 @@ object HudiConfig {
     props.put("hoodie.datasource.hive_sync.partition_extractor_class", "org.apache.hudi.hive.MultiPartKeysValueExtractor")
     props.put("hoodie.datasource.hive_sync.username", params.syncJDBCUsername)
     props.put("hoodie.datasource.write.payload.class","org.apache.hudi.common.model.DefaultHoodieRecordPayload")
+
+    props.put(HoodieIndexConfig.BLOOM_INDEX_UPDATE_PARTITION_PATH, "true")
+    props.put(HoodieIndexConfig.INDEX_TYPE_PROP, HoodieIndex.IndexType.GLOBAL_BLOOM.name())
+
+//    props.put("hoodie.write.concurrency.mode", "optimistic_concurrency_control")
+//    props.put("hoodie.cleaner.policy.failed.writes", "LAZY")
+//    props.put("hoodie.write.lock.provider", "org.apache.hudi.client.transaction.lock.ZookeeperBasedLockProvider")
+//    props.put("hoodie.write.lock.zookeeper.url", params.zookeeperUrl)
+//    props.put("hoodie.write.lock.zookeeper.port", params.zookeeperPort)
+//    props.put("hoodie.write.lock.zookeeper.lock_key", params.syncTableName)
+//    props.put("hoodie.write.lock.zookeeper.base_path", "/hudi/write_lock")
 
     props
 

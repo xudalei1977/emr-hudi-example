@@ -43,31 +43,6 @@ object Hudi2MSK {
       .select(to_json(struct("begin_lat", "begin_lon", "driver", "end_lat", "end_lon", "fare", "rider", "ts", "uuid", "partitionpath")).as("value"))
       .selectExpr("cast(value as string)")
 
-    val context = spark.sparkContext
-
-    val ssc = new StreamingContext(context, Seconds(15))
-    // 创建stream流
-    val stream: InputDStream[ConsumerRecord[String, String]] =
-      org.apache.spark.streaming.kafka010.KafkaUtils.createDirectStream(
-        ssc,
-        LocationStrategies.PreferConsistent,
-        ConsumerStrategies.Subscribe(topics, getkafkaParms()))
-    // 这里用flatmap把所有数组扁平化
-    val filterRdd = stream.map(_.value()).flatMap(lines => {
-      val buffer = new ListBuffer[Product]
-      val asJsonArray = new JsonParser().parse(lines).getAsJsonArray
-      for (index <- 0 until asJsonArray.size()) {
-        val asJsonObject = asJsonArray.get(index).getAsJsonObject
-        if (new objGetType().GetType(asJsonObject).equals("product")) {
-          //把每一条明细，结构化为对象，方便转化为DF或者DSet
-          buffer += new JSONToProduct().JSONToProduct(asJsonObject)
-        }
-      }
-      buffer
-    }).filter(r => r != null)
-
-    filterRdd.foreachRDD(x=>x.foreach(y=>println(y.toString)))
-
     df.write
       .format("kafka")
       .option("kafka.bootstrap.servers", parmas.brokerList)
