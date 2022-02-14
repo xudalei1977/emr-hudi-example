@@ -64,7 +64,7 @@ object MSK2Hudi {
 
     //process the schema from the first record from kafka
     var schema: StructType = null
-    var timeStamp: Long = null
+    var timeStamp: Long = 0L
 
     while(schema == null){
       timeStamp = (new Date).getTime
