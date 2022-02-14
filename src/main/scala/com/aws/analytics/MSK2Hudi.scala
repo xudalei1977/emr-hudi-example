@@ -78,6 +78,9 @@ object MSK2Hudi {
         }
         .start()
 
+      //waiting for the hdfs writing.
+      Thread.sleep(30000)
+
       try {
         val tmpDf = ss.read.text("/tmp/cdc-" + timeStamp)
         if (tmpDf.count > 0) {
@@ -85,10 +88,9 @@ object MSK2Hudi {
           schema = JsonSchema.getJsonSchemaFromJSONString(jsonString)
         }
       } catch {
-        case e: Exception => log.warn("")
+        case e: Exception => log.warn("could not read the hdfs file.")
       }
 
-      Thread.sleep(10000)
     }
 
     val broadCastSchema = ss.sparkContext.broadcast(schema)
