@@ -3,8 +3,9 @@ package com.aws.analytics.util
 import com.aws.analytics.conf.Config
 import org.apache.hudi.config.HoodieIndexConfig
 import org.apache.hudi.index.HoodieIndex
-
 import scala.collection.mutable
+import org.apache.hudi.DataSourceWriteOptions._
+
 object HudiConfig {
 
   def getEventConfig(params:Config): mutable.HashMap[String, String] = {
@@ -35,6 +36,7 @@ object HudiConfig {
     props.put("hoodie.cleaner.commits.retained", "2")
     props.put("hoodie.keep.min.commits", "3")
     props.put("hoodie.keep.max.commits", "4")
+    props.put("hoodie.datasource.hive_sync.mode", "hms")
     props.put("hoodie.datasource.hive_sync.database", params.syncDB)
     props.put("hoodie.datasource.hive_sync.table", params.syncTableName)
     props.put("hoodie.datasource.hive_sync.partition_fields", params.hudiPartition)

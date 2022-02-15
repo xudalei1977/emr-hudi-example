@@ -2,10 +2,6 @@ package com.aws.analytics
 
 import com.aws.analytics.conf.Config
 import com.aws.analytics.util.{HudiConfig, Meta, SparkHelper, JsonSchema}
-import net.heartsavior.spark.KafkaOffsetCommitterListener
-import org.apache.hudi.DataSourceWriteOptions
-import org.apache.hudi.config.{HoodieIndexConfig, HoodieLockConfig, HoodieWriteConfig}
-import org.apache.hudi.index.HoodieIndex
 import org.apache.log4j.{Level, Logger}
 import org.apache.spark.sql.{DataFrame, Dataset, SaveMode}
 import org.apache.spark.sql.functions.{col, from_json, lit}
