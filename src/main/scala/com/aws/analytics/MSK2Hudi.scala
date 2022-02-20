@@ -23,7 +23,7 @@ import org.apache.hudi.config.HoodieWriteConfig._
 import org.apache.hudi.config.HoodieCompactionConfig._
 import org.apache.spark.sql.Row
 import java.util.Date
-import java.text.SimpleDateFormat
+
 
 
 object MSK2Hudi {
@@ -114,7 +114,6 @@ object MSK2Hudi {
 
     query.awaitTermination()
   }
-
 
   def write2HudiFromDF(batchDF: DataFrame, parmas: Config) = {
     val newsDF = batchDF.filter(_ != null)

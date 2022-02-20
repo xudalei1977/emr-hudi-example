@@ -29,7 +29,8 @@ case class Config(
                    hudiPartition:String = "logday,hm",
                    concurrent:String = "false",
                    zookeeperUrl:String = "",
-                   zookeeperPort:String = "2181"
+                   zookeeperPort:String = "2181",
+                   hudiAggBasePath:String = ""
                  )
 
 
@@ -46,7 +47,7 @@ object Config {
       opt[String]('s', "syncHive").optional().action((x, config) => config.copy(syncHive = x)).text("whether sync hive，default:false")
       opt[String]('o', "startPos").optional().action((x, config) => config.copy(startPos = x)).text("kafka start pos latest or earliest,default latest")
       opt[String]('i', "trigger").optional().action((x, config) => config.copy(trigger = x)).text("default 300 second,streaming trigger interval")
-      opt[String]('c', "checkpointDir").required().action((x, config) => config.copy(checkpointDir = x)).text("hdfs dir which used to save checkpoint")
+      opt[String]('c', "checkpointDir").optional().action((x, config) => config.copy(checkpointDir = x)).text("hdfs dir which used to save checkpoint")
 
       programName match {
         case "Canal2Hudi" =>
@@ -88,6 +89,10 @@ object Config {
           opt[String]('g', "hudiEventBasePath").required().action((x, config) => config.copy(hudiEventBasePath = x)).text("hudi event table hdfs base path")
           opt[String]('l', "zookeeperUrl").optional().action((x, config) => config.copy(zookeeperUrl = x)).text("zookeeper url for hudi")
           opt[String]('t', "zookeeperPort").optional().action((x, config) => config.copy(zookeeperPort = x)).text("zookeeper port for hudi")
+
+        case "Aggregation" =>
+          opt[String]('g', "hudiEventBasePath").required().action((x, config) => config.copy(hudiEventBasePath = x)).text("hudi event table hdfs base path")
+          opt[String]('a', "hudiAggBasePath").optional().action((x, config) => config.copy(hudiAggBasePath = x)).text("hudi aggregation table hdfs base path")
 
         case "Hudi2MSK" =>
           opt[String]('w', "hudiWriteOperation").optional().action((x, config) => config.copy(hudiWriteOperation = x)).text("hudi write operation,default insert")
