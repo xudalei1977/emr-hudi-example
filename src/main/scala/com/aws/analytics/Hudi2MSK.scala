@@ -24,7 +24,7 @@ object Hudi2MSK {
     log.info(args.mkString)
 
     // Set log4j level to warn
-    Logger.getLogger("org").setLevel(Level.WARN)
+    Logger.getLogger("hudi2msk").setLevel(Level.WARN)
 
     //System.setProperty("HADOOP_USER_NAME", "hadoop")
     val parmas = Config.parseConfig(Hudi2MSK, args)

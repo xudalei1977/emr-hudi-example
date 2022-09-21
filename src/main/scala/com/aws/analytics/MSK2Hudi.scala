@@ -4,132 +4,68 @@ import com.aws.analytics.conf.Config
 import com.aws.analytics.util.{HudiConfig, Meta, SparkHelper, JsonSchema}
 import org.apache.log4j.{Level, Logger}
 import org.apache.spark.sql.{DataFrame, Dataset, SaveMode}
-import org.apache.spark.sql.functions.{col, from_json, lit}
 import org.apache.spark.sql.streaming.{StreamingQueryListener, Trigger}
-import org.apache.spark.sql.types.{IntegerType, LongType, StringType, StructField, StructType}
 import org.slf4j.LoggerFactory
-import org.apache.hudi.DataSourceReadOptions._
-
-import java.time.LocalDateTime
-import org.apache.spark.sql.{DataFrame, SaveMode, SparkSession}
-import org.apache.spark.sql.functions._
-import org.apache.spark.sql.types.{LongType, StringType, StructField, StructType}
-
-import java.time.LocalDateTime
-import java.util.UUID
-import org.apache.hudi.DataSourceReadOptions
-import org.apache.hudi.DataSourceWriteOptions._
-import org.apache.hudi.config.HoodieWriteConfig._
-import org.apache.hudi.config.HoodieCompactionConfig._
-import org.apache.spark.sql.Row
-import java.util.Date
-
 
 
 object MSK2Hudi {
 
-  private val log = LoggerFactory.getLogger("msk2hudi")
-
-  //private val DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd+HH:mm:ss")
+  private val log = LoggerFactory.getLogger("MSK2Hudi")
 
   def main(args: Array[String]): Unit = {
+
     log.info(args.mkString)
-
-    // Set log4j level to warn
     Logger.getLogger("org").setLevel(Level.WARN)
-
-    //System.setProperty("HADOOP_USER_NAME", "hadoop")
     val parmas = Config.parseConfig(MSK2Hudi, args)
 
     // init spark session
-    val ss = SparkHelper.getSparkSession(parmas.env)
-//    ss.conf.set("spark.hadoop.validateOutputSpecs", "false")
+    implicit val spark = SparkHelper.getSparkSession(parmas.env)
 
-    import ss.implicits._
-    val df = ss
+    val df = spark
       .readStream
       .format("kafka")
       .option("kafka.bootstrap.servers", parmas.brokerList)
-      .option("subscribe", parmas.sourceTopic)
+      //      .option("subscribe", parmas.sourceTopic)
+      .option("subscribePattern", parmas.sourceTopic)
       .option("startingOffsets", parmas.startPos)
       .option("failOnDataLoss", false)
-//      .option("maxOffsetsPerTrigger", "100")
-//      .option("kafka.consumer.commit.groupid", parmas.consumerGroup)
+      //      .option("maxOffsetsPerTrigger", "100")
+      //      .option("kafka.consumer.commit.groupid", parmas.consumerGroup)
       .load()
       .repartition(Integer.valueOf(parmas.partitionNum))
 
-    //process the schema from the first record from kafka
-    var schema: StructType = null
-    var timeStamp: Long = 0L
-
-    while(schema == null){
-      timeStamp = (new Date).getTime
-      df.withColumn("json", col("value").cast(StringType))
-        .select("json").filter(_ != null)
-        .writeStream
-        .option("checkpointLocation", "/home/hadoop/checkpoint-once/")
-        .trigger(Trigger.Once())
-        .foreachBatch { (batchDF: DataFrame, _: Long) =>
-          batchDF.write.text("/tmp/cdc-" + timeStamp)
-        }
-        .start()
-
-      //waiting for the hdfs writing.
-      Thread.sleep(30000)
-
-      try {
-        val tmpDf = ss.read.text("/tmp/cdc-" + timeStamp)
-        if (tmpDf.count > 0) {
-          val jsonString = tmpDf.first().getAs[String](0)
-          schema = JsonSchema.getJsonSchemaFromJSONString(jsonString)
-        }
-      } catch {
-        case e: Exception => log.warn("could not read the hdfs file.")
-      }
-
-    }
-
-    val broadCastSchema = ss.sparkContext.broadcast(schema)
-
-    val query = df.withColumn("json", col("value").cast(StringType))
-      .select(from_json(col("json"), broadCastSchema.value) as "data")
-      .select("data.*")
-      .drop("__op")
-      .drop("__source_connector")
-      .drop("__source_db")
-      .drop("__source_table")
-      .drop("__source_file")
-      .drop("__source_pos")
-      .drop("__source_ts_ms")
-      .drop("__deleted")
-      .where("data.id is not null")
-      .writeStream
+    val query = df.writeStream
       .queryName("MSK2Hudi")
       .foreachBatch { (batchDF: DataFrame, _: Long) =>
-        write2HudiFromDF(batchDF, parmas)
+        if(batchDF != null && (!batchDF.isEmpty) )
+          writeMultiTable2HudiFromDF(batchDF, parmas.syncDB, "upsert", parmas.zookeeperUrl,
+            parmas.hudiBasePath, parmas.impalaJdbcUrl, parmas.kuduDatabase)
       }
       .option("checkpointLocation", parmas.checkpointDir)
       .trigger(Trigger.ProcessingTime(parmas.trigger + " seconds"))
-      .start()
+      .start
 
     query.awaitTermination()
   }
 
-  def write2HudiFromDF(batchDF: DataFrame, parmas: Config) = {
-    val newsDF = batchDF.filter(_ != null)
-    if (!newsDF.isEmpty) {
-      newsDF.persist()
-    //  newsDF.show()
-
-      println(LocalDateTime.now() + " === start writing table")
-      newsDF.write.format("hudi")
-        .options(HudiConfig.getEventConfig(parmas))
-        .mode(SaveMode.Append)
-        .save(parmas.hudiEventBasePath)
-
-      newsDF.unpersist()
-      println(LocalDateTime.now() + " === finish")
-    }
-  }
-
 }
+
+spark-shell --master yarn \
+--deploy-mode client \
+--conf "spark.serializer=org.apache.spark.serializer.KryoSerializer" \
+--conf "spark.sql.hive.convertMetastoreParquet=false" \
+--packages org.apache.hudi:hudi-spark3-bundle_2.12:0.10.0,org.apache.spark:spark-avro_2.12:3.1.2 \
+  --jars s3://dalei-demo/jars/ImpalaJDBC41.jar,s3://dalei-demo/jars/scopt_2.12-4.0.0-RC2.jar,/usr/lib/spark/external/lib/spark-sql-kafka-0-10.jar,/usr/lib/spark/external/lib/spark-streaming-kafka-0-10-assembly.jar,/usr/lib/hudi/cli/lib/kafka-clients-2.4.1.jar,s3://dalei-demo/jars/commons-pool2-2.6.2.jar
+
+spark-submit --master yarn \
+  --deploy-mode client \
+--packages org.apache.hudi:hudi-spark3-bundle_2.12:0.10.0,org.apache.spark:spark-avro_2.12:3.1.2 \
+  --jars s3://dalei-demo/jars/ImpalaJDBC41.jar,s3://dalei-demo/jars/scopt_2.12-4.0.0-RC2.jar,/usr/lib/spark/external/lib/spark-sql-kafka-0-10.jar,/usr/lib/spark/external/lib/spark-streaming-kafka-0-10-assembly.jar,/usr/lib/hudi/cli/lib/kafka-clients-2.4.1.jar,s3://dalei-demo/jars/commons-pool2-2.6.2.jar \
+  --class com.aws.analytics.MSK2Hudi s3://dalei-demo/jars/emr-hudi-example-1.0-SNAPSHOT.jar \
+  -e dev \
+  -b b-3.tesla.4yy9yf.c5.kafka.us-east-1.amazonaws.com:9092,b-1.tesla.4yy9yf.c5.kafka.us-east-1.amazonaws.com:9092,b-2.tesla.4yy9yf.c5.kafka.us-east-1.amazonaws.com:9092 \
+  -t kudu.* -o earliest -p hudi-consumer-test-group-01 \
+  -l ip-10-0-0-4.ec2.internal \
+  -i 10 -c /home/hadoop/checkpoint -g s3://dalei-demo/hudi -s kudu_migration -m 20 \
+  -i jdbc:impala://10.0.0.16:21050/ \
+  -d tpcds_data10g_kudu

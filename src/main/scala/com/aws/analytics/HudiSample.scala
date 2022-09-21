@@ -17,7 +17,7 @@ import scala.concurrent.duration.{Duration, MINUTES}
 import scala.concurrent.{Await, ExecutionContext, ExecutionContextExecutor, Future}
 import java.time.format.DateTimeFormatter
 
-object Canal2Hudi {
+object HudiSample {
 
   case class TableInfoList(tableInfo: List[TableInfo])
 
@@ -28,7 +28,7 @@ object Canal2Hudi {
     // Set log4j level to warn
     Logger.getLogger("org").setLevel(Level.WARN)
     //    System.setProperty("HADOOP_USER_NAME", "hadoop")
-    val params = Config.parseConfig(Canal2Hudi, args)
+    val params = Config.parseConfig(HudiSample, args)
     val tableInfoList = JsonUtil.mapper.readValue(params.tableInfoJson, classOf[TableInfoList])
     // init spark session
     val ss = SparkHelper.getSparkSession(params.env)

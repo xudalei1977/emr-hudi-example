@@ -19,7 +19,7 @@ object HudiWriteTask {
         //.option(HoodieIndexConfig.BLOOM_INDEX_UPDATE_PARTITION_PATH, "true")
         .option(HoodieIndexConfig.INDEX_TYPE_PROP, HoodieIndex.IndexType.BLOOM.name())
         .mode(SaveMode.Append)
-        .save(params.hudiEventBasePath + tableInfo.database + "/" + tableInfo.table + "/")
+        .save(params.hudiBasePath + tableInfo.database + "/" + tableInfo.table + "/")
   }
 
   def runSerial(df: DataFrame, params: Config, tableInfo: TableInfo): Unit = {
@@ -30,7 +30,7 @@ object HudiWriteTask {
       //      .option(HoodieIndexConfig.BLOOM_INDEX_UPDATE_PARTITION_PATH, "true")
       .option(HoodieIndexConfig.INDEX_TYPE_PROP, HoodieIndex.IndexType.BLOOM.name())
       .mode(SaveMode.Append)
-      .save(params.hudiEventBasePath + tableInfo.database + "/" + tableInfo.table + "/")
+      .save(params.hudiBasePath + tableInfo.database + "/" + tableInfo.table + "/")
   }
 
 

@@ -14,7 +14,9 @@
         <maven-scala-plugin.version>2.10.1</maven-scala-plugin.version>
         <scala-maven-plugin.version>3.2.0</scala-maven-plugin.version>
         <maven-assembly-plugin.version>3.3.0</maven-assembly-plugin.version>
+        <hadoop.version>3.2.1</hadoop.version>
         <spark.version>3.1.2</spark.version>
+        <kudu.version>1.16.0</kudu.version>
         <scope.type>compile</scope.type>
         <scala.binary.version>2.12</scala.binary.version>
         <!--compile provided-->
@@ -90,44 +92,9 @@
             <scope>${scope.type}</scope>
         </dependency>
         <dependency>
-            <groupId>org.apache.hadoop</groupId>
-            <artifactId>hadoop-aws</artifactId>
-            <version>2.7.4</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>org.apache.hadoop</groupId>
-                    <artifactId>hadoop-common</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>commons-logging</groupId>
-                    <artifactId>commons-logging</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>org.codehaus.jackson</groupId>
-                    <artifactId>jackson-mapper-asl</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>org.codehaus.jackson</groupId>
-                    <artifactId>jackson-core-asl</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>com.fasterxml.jackson.core</groupId>
-                    <artifactId>jackson-core</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>com.fasterxml.jackson.core</groupId>
-                    <artifactId>jackson-databind</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>com.fasterxml.jackson.core</groupId>
-                    <artifactId>jackson-annotations</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-        <dependency>
             <groupId>com.amazonaws</groupId>
-            <artifactId>aws-java-sdk-s3</artifactId>
-            <version>1.11.1017</version>
+            <artifactId>aws-java-sdk-bundle</artifactId>
+            <version>1.12.31</version>
         </dependency>
         <dependency>
             <groupId>com.github.scopt</groupId>
@@ -175,7 +142,38 @@
         <dependency>
             <groupId>com.fasterxml.jackson.module</groupId>
             <artifactId>jackson-module-scala_${scala.binary.version}</artifactId>
-            <version>2.10.0</version>
+            <version>2.10.5</version>
+        </dependency>
+
+        <!-- https://mvnrepository.com/artifact/org.apache.kudu/kudu-client -->
+        <dependency>
+            <groupId>org.apache.kudu</groupId>
+            <artifactId>kudu-client</artifactId>
+            <version>${kudu.version}</version>
+            <scope>test</scope>
+        </dependency>
+
+        <!-- https://mvnrepository.com/artifact/org.apache.kudu/kudu-client-tools -->
+<!--        <dependency>-->
+<!--            <groupId>org.apache.kudu</groupId>-->
+<!--            <artifactId>kudu-client-tools</artifactId>-->
+<!--            <version>${kudu.version}</version>-->
+<!--        </dependency>-->
+
+        <!-- https://mvnrepository.com/artifact/org.apache.kudu/kudu-spark2 -->
+        <dependency>
+            <groupId>org.apache.kudu</groupId>
+            <artifactId>kudu-spark3_2.12</artifactId>
+            <version>${kudu.version}</version>
+        </dependency>
+
+        <!-- https://mvnrepository.com/artifact/com.cloudera.impala.jdbc/ImpalaJDBC41 -->
+        <dependency>
+            <groupId>com.cloudera</groupId>
+            <artifactId>ImpalaJDBC41</artifactId>
+            <version>2.6.4</version>
+            <scope>system</scope>
+            <systemPath>${project.basedir}/lib/ImpalaJDBC41.jar</systemPath>
         </dependency>
 
     </dependencies>

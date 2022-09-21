@@ -80,7 +80,7 @@ object Log2Hudi {
             .option(HoodieIndexConfig.BLOOM_INDEX_UPDATE_PARTITION_PATH, "true")
             .option(HoodieIndexConfig.INDEX_TYPE_PROP, HoodieIndex.IndexType.GLOBAL_BLOOM.name())
             .mode(SaveMode.Append)
-            .save(parmas.hudiEventBasePath)
+            .save(parmas.hudiBasePath)
         }
       }.start()
     query.awaitTermination()
