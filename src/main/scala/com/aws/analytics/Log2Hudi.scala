@@ -3,8 +3,6 @@ package com.aws.analytics
 import com.aws.analytics.conf.Config
 import com.aws.analytics.util.{HudiConfig, Meta, SparkHelper}
 import net.heartsavior.spark.KafkaOffsetCommitterListener
-import org.apache.hudi.DataSourceWriteOptions
-import org.apache.hudi.config.{HoodieIndexConfig, HoodieWriteConfig}
 import org.apache.hudi.index.HoodieIndex
 import org.apache.log4j.{Level, Logger}
 import org.apache.spark.sql.{Dataset, SaveMode}
@@ -17,15 +15,15 @@ import java.time.format.DateTimeFormatter
 
 object Log2Hudi {
 
-  private val log = LoggerFactory.getLogger("log2hudi")
+  private val log = LoggerFactory.getLogger("Log2Hudi")
 
   def main(args: Array[String]): Unit = {
+
     log.info(args.mkString)
-    // Set log4j level to warn
     Logger.getLogger("org").setLevel(Level.WARN)
-//    System.setProperty("HADOOP_USER_NAME", "hadoop")
+
     val parmas = Config.parseConfig(Log2Hudi, args)
-    // init spark session
+
     val ss = SparkHelper.getSparkSession(parmas.env)
     import ss.implicits._
     val df = ss
@@ -53,11 +51,11 @@ object Log2Hudi {
     val metaEventSchema = metaEventSample.schema
     val msb = ss.sparkContext.broadcast(metaEventSchema)
 //    val parb = ss.sparkContext.broadcast((parmas.partitionNum, parmas.partitionFormat))
-    // Kafka value
+
     val ds = df.selectExpr("CAST(value AS STRING)").as[String]
     val query = ds
       .writeStream
-      .queryName("action2hudi")
+      .queryName("Log2Hudi")
       .option("checkpointLocation", parmas.checkpointDir)
       // if set 0, as fast as possible
       .trigger(Trigger.ProcessingTime(parmas.trigger + " seconds"))
@@ -77,14 +75,14 @@ object Log2Hudi {
             }))
           resDF.write.format("org.apache.hudi")
             .options(HudiConfig.getEventConfig(parmas))
-            .option(HoodieIndexConfig.BLOOM_INDEX_UPDATE_PARTITION_PATH, "true")
-            .option(HoodieIndexConfig.INDEX_TYPE_PROP, HoodieIndex.IndexType.GLOBAL_BLOOM.name())
+            .option("hoodie.bloom.index.update.partition.path", "true")
+            .option("hoodie.index.type", HoodieIndex.IndexType.GLOBAL_BLOOM.name())
             .mode(SaveMode.Append)
             .save(parmas.hudiBasePath)
         }
       }.start()
-    query.awaitTermination()
 
+    query.awaitTermination()
   }
 
 }

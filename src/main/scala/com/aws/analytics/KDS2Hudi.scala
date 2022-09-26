@@ -22,18 +22,14 @@ import org.apache.hudi.config.HoodieCompactionConfig._
 
 object KDS2Hudi {
 
-  private val log = LoggerFactory.getLogger("kds2hudi")
+  private val log = LoggerFactory.getLogger("KDS2Hudi")
 
   def main(args: Array[String]): Unit = {
     log.info(args.mkString)
-
-    // Set log4j level to warn
     Logger.getLogger("org").setLevel(Level.WARN)
 
-    //System.setProperty("HADOOP_USER_NAME", "hadoop")
     val parmas = Config.parseConfig(KDS2Hudi, args)
 
-    // init spark session
     val ss = SparkHelper.getSparkSession(parmas.env)
     import ss.implicits._
 

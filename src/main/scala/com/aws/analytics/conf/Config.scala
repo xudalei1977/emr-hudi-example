@@ -34,9 +34,8 @@ case class Config(
                    kuduMaster:String = "",
                    kuduDatabase:String = "",
                    filterString:String = "",
-                   aosUserName:String = "",
-                   aosPassword:String = "",
-                   aosEndpoint:String = ""
+                   hiveTablePath: String = "",
+                   hudiIntervel: Int = 30000
                  )
 
 object Config {
@@ -60,42 +59,22 @@ object Config {
       opt[String]('z', "hudiKeyField").optional().action((x, config) => config.copy(hudiKeyField = x)).text("hudi key field, recordkey")
       opt[String]('m', "hudiCombineField").optional().action((x, config) => config.copy(hudiCombineField = x)).text("hudi combine field, precombine")
       opt[String]('q', "hudiPartition").optional().action((x, config) => config.copy(hudiPartition = x)).text("hudi partition column,default logday,hm")
+      opt[String]('t', "morCompact").optional().action((x, config) => config.copy(morCompact = x)).text("mor inline compact,default:true")
+      opt[String]('m', "inlineMax").optional().action((x, config) => config.copy(inlineMax = x)).text("inline max compact,default:20")
+      opt[String]('l', "zookeeperUrl").optional().action((x, config) => config.copy(zookeeperUrl = x)).text("zookeeper url for hudi")
 
       programName match {
-        case "MSK2Hudi" =>
-          opt[String]('t', "morCompact").optional().action((x, config) => config.copy(morCompact = x)).text("mor inline compact,default:true")
-          opt[String]('m', "inlineMax").optional().action((x, config) => config.copy(inlineMax = x)).text("inline max compact,default:20")
-          opt[String]('l', "zookeeperUrl").optional().action((x, config) => config.copy(zookeeperUrl = x)).text("zookeeper url for hudi")
-          opt[String]('t', "zookeeperPort").optional().action((x, config) => config.copy(zookeeperPort = x)).text("zookeeper port for hudi")
-          opt[String]('i', "impalaJdbcUrl").required().action((x, config) => config.copy(impalaJdbcUrl = x)).text("impalaJdbc url for kudu")
-          opt[String]('d', "kuduDatabase").required().action((x, config) => config.copy(kuduDatabase = x)).text("kudu database will be migrated")
-
         case "Hive2Hudi" =>
-          opt[String]('l', "zookeeperUrl").optional().action((x, config) => config.copy(zookeeperUrl = x)).text("zookeeper url for hudi")
+          opt[String]('h', "hiveTablePath").optional().action((x, config) => config.copy(hiveTablePath = x)).text("hive table path")
 
-        case "Kudu2Hudi" =>
-          opt[String]('l', "zookeeperUrl").optional().action((x, config) => config.copy(zookeeperUrl = x)).text("zookeeper url for hudi")
-          opt[String]('i', "impalaJdbcUrl").required().action((x, config) => config.copy(impalaJdbcUrl = x)).text("impalaJdbc url for kudu")
-          opt[String]('m', "kuduMaster").required().action((x, config) => config.copy(kuduMaster = x)).text("kudu master and port")
-          opt[String]('d', "kuduDatabase").required().action((x, config) => config.copy(kuduDatabase = x)).text("kudu database will be migrated")
-
-        case "Kudu2MSK" =>
-          opt[String]('l', "zookeeperUrl").optional().action((x, config) => config.copy(zookeeperUrl = x)).text("zookeeper url for hudi")
-          opt[String]('i', "impalaJdbcUrl").required().action((x, config) => config.copy(impalaJdbcUrl = x)).text("impalaJdbc url for kudu")
-          opt[String]('m', "kuduMaster").required().action((x, config) => config.copy(kuduMaster = x)).text("kudu master and port")
-          opt[String]('d', "kuduDatabase").required().action((x, config) => config.copy(kuduDatabase = x)).text("kudu database will be migrated")
-          opt[String]('f', "filterString").optional().action((x, config) => config.copy(filterString = x)).text("kudu table filter string")
+        case "MSK2Hudi" =>
 
         case "ODS2DWD" =>
-          opt[String]('l', "zookeeperUrl").optional().action((x, config) => config.copy(zookeeperUrl = x)).text("zookeeper url for hudi")
+          opt[Int]('i', "hudiIntervel").optional().action((x, config) => config.copy(hudiIntervel = x)).text("interval for hudi incremetail query")
 
         case "DWD2DM" =>
-          opt[String]('l', "zookeeperUrl").optional().action((x, config) => config.copy(zookeeperUrl = x)).text("zookeeper url for hudi")
+          opt[Int]('i', "hudiIntervel").optional().action((x, config) => config.copy(hudiIntervel = x)).text("interval for hudi incremetail query")
 
-        case "Parquet2AOS" =>
-          opt[String]('u', "aosUserName").optional().action((x, config) => config.copy(aosUserName = x)).text("aos user name")
-          opt[String]('p', "aosPassword").optional().action((x, config) => config.copy(aosPassword = x)).text("aos password")
-          opt[String]('t', "aosEndpoint").optional().action((x, config) => config.copy(aosEndpoint = x)).text("aos endpoint")
       }
 
     }

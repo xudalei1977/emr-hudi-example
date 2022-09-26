@@ -69,7 +69,7 @@ package object analytics {
 
       try {
         newsDF.write.format("hudi").options(options)
-          .mode(SaveMode.Overwrite)
+          .mode(SaveMode.Append)
           .save(s"$basePath/$database/$tableName")
       } catch {
         case e: Exception => e.printStackTrace
@@ -149,11 +149,11 @@ package object analytics {
     if (tableList.size > 0) {
       tableList.foreach( table => {
         val tableName = table.split('.').last
-        println(LocalDateTime.now() + " ****** table name := " + tableName)
+//      println(LocalDateTime.now() + " ****** table name := " + tableName)
 
         val (primaryKey, partitionKey) = getPrimaryAndPartitionKey(impalaJdbcUrl + kuduDatabase, tableName)
-        println(LocalDateTime.now() + " ****** primary key := " + primaryKey)
-        println(LocalDateTime.now() + " ****** partition key := " + partitionKey)
+//      println(LocalDateTime.now() + " ****** primary key := " + primaryKey)
+//      println(LocalDateTime.now() + " ****** partition key := " + partitionKey)
 
         val oneBatchDF = batchDF.filter("topic = '" + table + "'")
           .withColumn("json", col("value").cast(StringType)).select("json")
@@ -181,7 +181,6 @@ package object analytics {
 
     }
   }
-
 
   def genPrimaryKeyFilter(primaryKey: String): String = {
     val filterArr = for(key <- primaryKey.split(",")) yield key + " is not null "

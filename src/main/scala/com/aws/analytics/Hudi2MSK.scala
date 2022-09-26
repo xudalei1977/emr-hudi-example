@@ -18,13 +18,13 @@ import org.slf4j.LoggerFactory
 
 object Hudi2MSK {
 
-  private val log = LoggerFactory.getLogger("hudi2msk")
+  private val log = LoggerFactory.getLogger("Hudi2MSK")
 
   def main(args: Array[String]): Unit = {
     log.info(args.mkString)
 
     // Set log4j level to warn
-    Logger.getLogger("hudi2msk").setLevel(Level.WARN)
+    Logger.getLogger("Hudi2MSK").setLevel(Level.WARN)
 
     //System.setProperty("HADOOP_USER_NAME", "hadoop")
     val parmas = Config.parseConfig(Hudi2MSK, args)
