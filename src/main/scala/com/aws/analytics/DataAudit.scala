@@ -47,7 +47,7 @@ object DataAudit {
   }
 
   private def write2File(ret: String, file: File): Unit = {
-    val bw = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(file), "UTF-8"))
+    val bw = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(file, true), "UTF-8"))
 
     bw.write(ret)
     bw.write("\n")
