@@ -10,7 +10,8 @@ import java.time.LocalDateTime
 import scala.collection.mutable
 
 package object analytics {
-  private val CLASS_NAME = "com.cloudera.impala.jdbc41.Driver"
+  //private val CLASS_NAME = "com.cloudera.impala.jdbc41.Driver"
+  private val CLASS_NAME = "com.mysql.cj.jdbc.Drive"
 
   def writeHudiTable(batchDF: DataFrame, database: String, tableName: String, writeMode: String = "upsert", zookeeperUrl: String,
                      primaryKeys: String, combineKey: String, partitionKey: String, basePath: String, tableType: String): Unit = {
@@ -140,6 +141,30 @@ package object analytics {
 
   }
 
+  def queryByJdbc(host: String, database: String, userName: String, password: String, sql: String) : Seq[String] = {
+    var conn: Connection = null
+    var ps: PreparedStatement = null
+    var rs: ResultSet = null
+    var seq: Seq[String] = Seq()
+    try {
+      Class.forName(CLASS_NAME)
+      conn = DriverManager.getConnection("jdbc:mysql://" + host + "/" + database, userName, password)
+      ps = conn.prepareStatement(sql)
+      rs = ps.executeQuery
+
+      while (rs.next)
+        seq :+= rs.getString(1)
+      seq
+    } catch {
+      case e: Exception => e.printStackTrace
+        seq
+    } finally {
+      if (rs != null) rs.close
+      if (ps != null) ps.close
+      if (conn != null) conn.close
+    }
+
+  }
 
   //get the table name from kafka top pattern, e.g. kudu.call_center
   def writeMultiTable2HudiFromDF(batchDF: DataFrame, database: String, writeMode: String = "upsert", zookeeperUrl: String,
@@ -186,5 +211,7 @@ package object analytics {
     val filterArr = for(key <- primaryKey.split(",")) yield key + " is not null "
     filterArr.mkString(" and ")
   }
+
+
 }
 

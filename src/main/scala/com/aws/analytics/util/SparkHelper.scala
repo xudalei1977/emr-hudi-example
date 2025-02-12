@@ -16,6 +16,8 @@ object SparkHelper {
           .set("spark.sql.hive.convertMetastoreParquet", "false")
           .set("spark.debug.maxToStringFields", "500")
           .set("spark.sql.cbo.enabled", "true")
+          .set("spark.hadoop.hive.exec.dynamic.partition.mode", "nonstrict")
+          .set("spark.hadoop.hive.exec.dynamic.partition", "true")
           .set("spark.hadoop.dfs.client.block.write.replace-datanode-on-failure.enable","true")
           .set("spark.hadoop.dfs.client.block.write.replace-datanode-on-failure.policy","NEVER")
 
