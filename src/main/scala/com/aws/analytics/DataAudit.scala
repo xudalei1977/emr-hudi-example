@@ -62,4 +62,4 @@ object DataAudit {
 //  --jars ./scopt_2.12-4.0.0-RC2.jar \
 //  --class com.aws.analytics.DataAudit ./emr-hudi-example-1.0-SNAPSHOT.jar \
 //  -e prod -H localhost \
-//  -D mc_2_hive -F dh=2024030612 -R /home/hadoop/audit_result.csv
+//  -D mc_2_hive -F dh='2024030612' -R /home/hadoop/audit_result.csv

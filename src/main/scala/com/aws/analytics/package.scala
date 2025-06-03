@@ -33,7 +33,13 @@ package object analytics {
       "hoodie.datasource.hive_sync.mode" -> "hms",
       "hoodie.datasource.hive_sync.database" -> database,
       "hoodie.datasource.hive_sync.table" -> tableName,
-      "hoodie.datasource.write.payload.class" -> "org.apache.hudi.common.model.DefaultHoodieRecordPayload"
+      "hoodie.datasource.write.payload.class" -> "org.apache.hudi.common.model.DefaultHoodieRecordPayload",
+      "index.global.enabled" -> "false",
+      "hoodie.index.type" -> "BUCKET",
+      "hoodie.storage.layout.partitioner.class" -> "org.apache.hudi.table.action.commit.SparkBucketIndexPartitioner",
+      "hoodie.index.bucket.engine" -> "SIMPLE",
+      "hoodie.metadata.enable" -> "false",
+      "hoodie.bucket.index.num.buckets" -> "16"
     )
 
     if (hasZookeeperLock) {

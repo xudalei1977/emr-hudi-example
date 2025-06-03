@@ -29,7 +29,7 @@ object Hive2Hudi {
                   .withColumn("created_ts", lit((new Date()).getTime))
                   .repartition(Integer.valueOf(parmas.partitionNum))
 
-    val tableType = if (parmas.hudiPartition != null && parmas.hudiPartition.length > 0) "MERGE_ON_READ" else "COPY_ON_WRITE"
+    val tableType = if (parmas.hudiPartition != null && parmas.hudiPartition.length > 0) "COPY_ON_WRITE" else "COPY_ON_WRITE"
 
     writeHudiTable(df, parmas.syncDB, parmas.syncTableName, "upsert", parmas.zookeeperUrl,
                   parmas.hudiKeyField, "created_ts", parmas.hudiPartition, parmas.hudiBasePath, tableType)
@@ -38,12 +38,12 @@ object Hive2Hudi {
 
 //spark-submit --master yarn \
 //  --deploy-mode client \
-//  --jars /usr/lib/hudi/hudi-spark3-bundle_2.12-0.11.0-amzn-0.jar,s3://dalei-demo/jars/scopt_2.12-4.0.0-RC2.jar,/usr/lib/spark/external/lib/spark-sql-kafka-0-10.jar,/usr/lib/spark/external/lib/spark-streaming-kafka-0-10-assembly.jar,/usr/lib/hudi/cli/lib/kafka-clients-2.4.1.jar,s3://dalei-demo/jars/commons-pool2-2.6.2.jar \
+//  --jars /usr/lib/hudi/hudi-spark3-bundle_2.12-0.15.0-amzn-2.jar,s3://dalei-demo/jars/scopt_2.12-4.0.0-RC2.jar,/usr/lib/spark/connector/lib/spark-sql-kafka-0-10.jar,/usr/lib/spark/connector/lib/spark-streaming-kafka-0-10-assembly.jar,/usr/lib/hudi/cli/lib/kafka-clients-2.8.0.jar,s3://dalei-demo/jars/commons-pool2-2.6.2.jar \
 //  --class com.aws.analytics.Hive2Hudi ./emr-hudi-example-1.0-SNAPSHOT.jar \
 //  -e prod \
-//  -l ip-10-0-0-121.ec2.internal \
-//  -g s3://dalei-demo/hudi -s kudu_migration -u inventory -z inv_item_sk,inv_warehouse_sk -q inv_date_sk \
-//  -h s3://dalei-demo/tpcds/data10g/inventory
+//  -l ip-10-0-0-162.ec2.internal \
+//  -g s3://dalei-demo/hudi -s kudu_migration -u inventory2 -z inv_item_sk,inv_warehouse_sk -q inv_date_sk \
+//  -P s3://dalei-demo/tpcds/data10g/inventory
 
 //spark-shell --master yarn \
 //  --deploy-mode client \

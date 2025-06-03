@@ -1,59 +1,135 @@
 package com.aws.analytics.util
 
 import org.slf4j.{Logger, LoggerFactory}
+
 import java.sql.{Connection, DriverManager, PreparedStatement, ResultSet}
 import java.util.Properties
 import scala.collection.immutable.{IndexedSeq, Seq, Set}
 import com.aws.analytics.conf.Config
+import com.zaxxer.hikari.{HikariConfig, HikariDataSource}
+
+import scala.util.{Try, Using}
 
 class MySQLUtil {
     private val logger: Logger = LoggerFactory.getLogger("MySQLUtil")
     private val CLASS_NAME = "com.mysql.cj.jdbc.Driver"
 
-    def getJDBCUrl(conf: Config): String = {
-        s"jdbc:mysql://${conf.rdsHost}:3306/${conf.rdsDatabase}?useSSL=false&tinyInt1isBit=false&user=${conf.rdsUserName}&password=${conf.rdsPassword}"
-    }
-    
-    def queryByJdbc(conf: Config, sql: String) : Seq[String] = {
-        var conn: Connection = null
-        var ps: PreparedStatement = null
-        var rs: ResultSet = null
-        var seq: Seq[String] = Seq()
-        try {
-            Class.forName(CLASS_NAME)
-            // logger.info(s"******** getJDBCUrl(conf) := ${getJDBCUrl(conf)}")
-            conn = DriverManager.getConnection(getJDBCUrl(conf))
-            ps = conn.prepareStatement(sql)
-            rs = ps.executeQuery
+    // Connection pool configuration
+    private var dataSource: HikariDataSource = _
 
-            while (rs.next)
-                seq :+= rs.getString(1)
-            seq
-        } catch {
-            case e: Exception => e.printStackTrace
-                seq
-        } finally {
-            if (rs != null) rs.close
-            if (ps != null) ps.close
-            if (conn != null) conn.close
+    // Initialize connection pool
+    private def initializeConnectionPool(conf: Config): Unit = {
+        if (dataSource == null) {
+            val hikariConfig = new HikariConfig()
+            hikariConfig.setJdbcUrl(getJDBCUrl(conf))
+            hikariConfig.setUsername(conf.rdsUserName)
+            hikariConfig.setPassword(conf.rdsPassword)
+            hikariConfig.setMaximumPoolSize(10)
+            hikariConfig.setMinimumIdle(5)
+            hikariConfig.setIdleTimeout(300000)
+            hikariConfig.setConnectionTimeout(20000)
+
+            dataSource = new HikariDataSource(hikariConfig)
+        }
+    }
+
+    def getJDBCUrl(conf: Config): String = {
+        val baseUrl = s"jdbc:mysql://${conf.rdsHost}:3306/${conf.rdsDatabase}"
+        val params = Seq(
+            "useSSL=false",
+            "tinyInt1isBit=false",
+            "rewriteBatchedStatements=true",
+            "useUnicode=true",
+            "characterEncoding=UTF-8",
+            "serverTimezone=UTC"
+        ).mkString("&")
+
+        s"$baseUrl?$params"
+    }
+
+    def queryByJdbc(conf: Config, sql: String): Seq[String] = {
+        initializeConnectionPool(conf)
+
+        Using.Manager { use =>
+            val conn = use(dataSource.getConnection)
+            val ps = use(conn.prepareStatement(sql))
+            val rs = use(ps.executeQuery())
+
+            val builder = Seq.newBuilder[String]
+            while (rs.next) {
+                builder += rs.getString(1)
+            }
+            builder.result()
+        }.getOrElse {
+            logger.error(s"Failed to execute query: $sql")
+            Seq.empty
         }
     }
 
     def getConnection(conf: Config): Connection = {
+        initializeConnectionPool(conf)
+        Try {
+            dataSource.getConnection
+        }.getOrElse {
+            logger.error("Failed to get connection from pool, falling back to direct connection")
+            createDirectConnection(conf)
+        }
+    }
+
+    private def createDirectConnection(conf: Config): Connection = {
         val connectionProps = new Properties()
         connectionProps.put("user", conf.rdsUserName)
         connectionProps.put("password", conf.rdsPassword)
-        val connectionString = getJDBCUrl(conf)
-        println(s"connection string: = ${connectionString}" )
-        Class.forName(CLASS_NAME)
-        DriverManager.getConnection(connectionString, connectionProps)
+
+        Try {
+            Class.forName(CLASS_NAME)
+            DriverManager.getConnection(getJDBCUrl(conf), connectionProps)
+        }.recover { case e =>
+            logger.error(s"Failed to create direct connection: ${e.getMessage}")
+            throw e
+        }.get
+    }
+
+    // Resource cleanup
+    def closePool(): Unit = {
+        Option(dataSource).foreach { ds =>
+            ds.close()
+            dataSource = null
+        }
+    }
+
+    // Batch operations helper
+    def executeBatch[T](conf: Config, sql: String, params: Seq[T])(setParams: (PreparedStatement, T) => Unit): Int = {
+        Using.Manager { use =>
+            val conn = use(getConnection(conf))
+            val ps = use(conn.prepareStatement(sql))
+
+            params.foreach { param =>
+                setParams(ps, param)
+                ps.addBatch()
+            }
+
+            ps.executeBatch().sum
+        }.getOrElse {
+            logger.error(s"Failed to execute batch operation")
+            0
+        }
+    }
+
+    // Helper method for prepared statements with automatic resource management
+    def executeQuery[T](conf: Config, sql: String)(process: ResultSet => T): Option[T] = {
+        Using.Manager { use =>
+            val conn = use(getConnection(conf))
+            val ps = use(conn.prepareStatement(sql))
+            val rs = use(ps.executeQuery())
+
+            Option(process(rs))
+        }.toOption.flatten
     }
 
     //Use this method to get the columns to extract
     def getValidFieldNames(conf: Config, tableName: String): String = {
-        val conn = getConnection(conf)
         val tableDetails = getTableDetails(conf, tableName)
-        conn.close()
         tableDetails.validFields.map(r => s""" ${r.fieldName.toLowerCase} """).mkString(",")
     }
 
@@ -220,4 +296,16 @@ case class TableDetails(validFields: Seq[DBField],
            |   Primary Keys: $primaryKey
            |}""".stripMargin
     }
+}
+
+
+
+// Companion object for singleton instance
+object MySQLUtil {
+    private val instance = new MySQLUtil()
+
+    def getInstance: MySQLUtil = instance
+
+    // Ensure cleanup on JVM shutdown
+    Runtime.getRuntime.addShutdownHook(new Thread(() => instance.closePool()))
 }
